@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import errorHandler from './middleware/errorHandler';
+import path from 'path';
 
 const app: Express = express();
 
@@ -15,6 +16,8 @@ app.use(cors({
 app.use(express.json({ limit: '1gb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '1gb' }));
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 import routes from './routes';

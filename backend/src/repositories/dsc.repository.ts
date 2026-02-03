@@ -63,6 +63,24 @@ export const DscRepository = {
     return deleteResult.affectedRows > 0;
   },
 
+  async removeAllSupervisors(dscId: number): Promise<boolean> {
+    const [result] = await pool.execute(
+      "DELETE FROM dsc_members WHERE dsc_id = ? AND role_in_dsc IN ('supervisor', 'co_supervisor')",
+      [dscId]
+    );
+    const deleteResult = result as any;
+    return deleteResult.affectedRows > 0;
+  },
+
+  async removeAllMembers(dscId: number): Promise<boolean> {
+    const [result] = await pool.execute(
+      "DELETE FROM dsc_members WHERE dsc_id = ?",
+      [dscId]
+    );
+    const deleteResult = result as any;
+    return deleteResult.affectedRows > 0;
+  },
+
   async findMembersByDscId(dscId: number): Promise<any[]> {
     const [rows] = await pool.execute(
       `SELECT u.id, u.name, u.email, dm.role_in_dsc as role
@@ -75,10 +93,24 @@ export const DscRepository = {
   },
 
   async findStudentsByDscId(dscId: number): Promise<any[]> {
-    // This assumes a student_dsc table exists for the many-to-many relationship
-    // As the table does not exist, this will need to be adjusted when it does.
-    // For now, returning an empty array to avoid errors.
-    return Promise.resolve([]);
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.name, u.email, st.program
+       FROM students st
+       JOIN users u ON st.user_id = u.id
+       WHERE st.dsc_id = ?`,
+      [dscId]
+    );
+    return rows as any[];
+  },
+
+  async addStudentsToDsc(dscId: number, studentIds: number[]): Promise<void> {
+    const promises = studentIds.map(studentId =>
+      pool.execute(
+        'UPDATE students SET dsc_id = ? WHERE user_id = ?',
+        [dscId, studentId]
+      )
+    );
+    await Promise.all(promises);
   },
 
   async countByStatus(status: 'active' | 'inactive'): Promise<number> {
